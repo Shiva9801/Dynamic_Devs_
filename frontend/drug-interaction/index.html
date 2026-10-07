@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drug Safety Alerts</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1 data-i18n="title"></h1>
+    <div>
+      <button id="btn-en">English</button>
+      <button id="btn-hi">हिन्दी</button>
+      <button id="btn-bn">বাংলা</button>
+      <button id="btn-mr">मराठी</button>
+    </div>
+  </header>
+
+  <section>
+    <h2 data-i18n="upload"></h2>
+    <input type="file" id="upload" accept="image/*">
+    <br>
+    <img id="preview" alt="">
+  </section>
+
+  <section>
+    <h2 data-i18n="checkTitle"></h2>
+    <input type="text" id="drugsInput" placeholder="warfarin, ibuprofen" style="width:100%;padding:10px;margin-bottom:6px;box-sizing:border-box;">
+    <input type="text" id="foodsInput" placeholder="leafy greens" style="width:100%;padding:10px;box-sizing:border-box;">
+    <button id="checkBtn" data-i18n="checkBtn"></button>
+    <div id="apiStatus"></div>
+  </section>
+
+  <section>
+    <h2 data-i18n="confirmTitle"></h2>
+    <div id="confirm"></div>
+  </section>
+
+  <div id="banner"></div>
+
+  <section>
+    <h2 data-i18n="patientTitle"></h2>
+    <div id="patient"></div>
+  </section>
+
+  <section>
+    <h2 data-i18n="doctorTitle"></h2>
+    <div class="table-wrap"><div id="doctor"></div></div>
+  </section>
+
+  <footer data-i18n="disclaimer"></footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "patient_id": "test1",
+  "drugs_checked": [
+    "warfarin",
+    "ibuprofen"
+  ],
+  "foods_checked": [
+    "leafy greens"
+  ],
+  "interactions": [
+    {
+      "drug_a": "warfarin",
+      "drug_b": "ibuprofen",
+      "type": "drug-drug",
+      "severity": "major",
+      "mechanism": "NSAIDs raise bleeding risk, especially stomach bleeding, on top of warfarin.",
+      "note": null,
+      "source": "seed data - verify (DDInter / drug label)",
+      "suggest_replacing": "ibuprofen",
+      "alternatives": [
+        "paracetamol"
+      ],
+      "alternatives_note": "For clinician review only; not a prescription."
+    },
+    {
+      "drug_a": "warfarin",
+      "drug_b": "leafy greens",
+      "type": "drug-food",
+      "severity": "moderate",
+      "mechanism": "Vitamin K in leafy greens can weaken warfarin; keep intake consistent.",
+      "note": null,
+      "source": "seed data - verify (DDInter / drug label)",
+      "suggest_replacing": null,
+      "alternatives": [],
+      "alternatives_note": null
+    }
+  ],
+  "unresolved_drugs": [],
+  "low_confidence_drugs": [],
+  "disclaimer": "Decision support only. Not a substitute for a doctor or pharmacist."
+}
