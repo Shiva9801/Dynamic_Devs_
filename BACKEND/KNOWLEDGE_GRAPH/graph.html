@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Drug Interaction Knowledge Graph</title>
+
+    <!-- Vis Network -->
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1f2937;
+        }
+
+        /* -------------------------------------------------- */
+        /* HEADER */
+        /* -------------------------------------------------- */
+
+        .header {
+            background: #111827;
+            color: white;
+            padding: 18px 24px;
+        }
+
+        .header h1 {
+            margin: 0 0 6px 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 0;
+            color: #d1d5db;
+            font-size: 14px;
+        }
+
+        /* -------------------------------------------------- */
+        /* CONTROLS */
+        /* -------------------------------------------------- */
+
+        .controls {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #d1d5db;
+
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        #searchBox {
+            flex: 1;
+            padding: 10px 12px;
+
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+
+            font-size: 15px;
+            outline: none;
+        }
+
+        #searchBox:focus {
+            border-color: #2563eb;
+        }
+
+        button {
+            border: none;
+            border-radius: 6px;
+            padding: 10px 14px;
+
+            cursor: pointer;
+
+            background: #2563eb;
+            color: white;
+
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        select {
+            padding: 9px 12px;
+
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+
+            background: white;
+            font-size: 14px;
+        }
+
+        /* -------------------------------------------------- */
+        /* STATS */
+        /* -------------------------------------------------- */
+
+        .stats {
+            background: white;
+
+            display: flex;
+            gap: 25px;
+
+            padding: 12px 20px;
+
+            border-bottom: 1px solid #e5e7eb;
+
+            font-size: 14px;
+        }
+
+        .stat strong {
+            color: #111827;
+        }
+
+        /* -------------------------------------------------- */
+        /* MAIN LAYOUT */
+        /* -------------------------------------------------- */
+
+        .main {
+            display: flex;
+            height: calc(100vh - 151px);
+        }
+
+        /* -------------------------------------------------- */
+        /* GRAPH */
+        /* -------------------------------------------------- */
+
+        #graph {
+            flex: 1;
+
+            min-width: 0;
+
+            background: white;
+
+            border-right: 1px solid #d1d5db;
+        }
+
+        /* -------------------------------------------------- */
+        /* SIDE PANEL */
+        /* -------------------------------------------------- */
+
+        .side-panel {
+            width: 330px;
+
+            background: white;
+
+            padding: 18px;
+
+            overflow-y: auto;
+        }
+
+        .side-panel h2 {
+            margin-top: 0;
+
+            font-size: 18px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+
+            border: 1px solid #e2e8f0;
+
+            border-radius: 8px;
+
+            padding: 12px;
+
+            margin-bottom: 12px;
+        }
+
+        .info-title {
+            font-weight: bold;
+
+            margin-bottom: 6px;
+        }
+
+        .interaction {
+            border-left: 5px solid #94a3b8;
+
+            background: #f8fafc;
+
+            padding: 10px;
+
+            margin-top: 10px;
+
+            border-radius: 5px;
+        }
+
+        .interaction.major {
+            border-left-color: #dc2626;
+        }
+
+        .interaction.moderate {
+            border-left-color: #f59e0b;
+        }
+
+        .interaction.minor {
+            border-left-color: #eab308;
+        }
+
+        .interaction.contraindicated {
+            border-left-color: #000000;
+        }
+
+        .severity {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        .mechanism {
+            margin-top: 7px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .empty {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        /* -------------------------------------------------- */
+        /* SEARCH RESULTS */
+        /* -------------------------------------------------- */
+
+        #searchResults {
+            position: absolute;
+
+            background: white;
+
+            border: 1px solid #cbd5e1;
+
+            border-radius: 6px;
+
+            max-height: 250px;
+
+            overflow-y: auto;
+
+            z-index: 1000;
+
+            display: none;
+
+            width: 350px;
+
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .search-result {
+            padding: 9px 12px;
+
+            cursor: pointer;
+
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .search-result:hover {
+            background: #eff6ff;
+        }
+
+        .search-result small {
+            display: block;
+
+            color: #64748b;
+
+            margin-top: 2px;
+        }
+
+        /* -------------------------------------------------- */
+        /* LEGEND */
+        /* -------------------------------------------------- */
+
+        .legend {
+            display: flex;
+
+            gap: 15px;
+
+            flex-wrap: wrap;
+
+            margin-top: 10px;
+
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+
+            align-items: center;
+
+            gap: 5px;
+        }
+
+        .legend-dot {
+            width: 11px;
+            height: 11px;
+
+            border-radius: 50%;
+        }
+
+        .major-dot {
+            background: #dc2626;
+        }
+
+        .moderate-dot {
+            background: #f59e0b;
+        }
+
+        .minor-dot {
+            background: #eab308;
+        }
+
+        .food-dot {
+            background: #16a34a;
+        }
+
+        /* -------------------------------------------------- */
+        /* LOADING */
+        /* -------------------------------------------------- */
+
+        #loading {
+            position: fixed;
+
+            inset: 0;
+
+            background: rgba(255,255,255,0.9);
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            z-index: 5000;
+
+            font-size: 20px;
+
+            font-weight: bold;
+        }
+
+        #error {
+            display: none;
+
+            position: fixed;
+
+            top: 20px;
+
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+            padding: 14px 20px;
+
+            border-radius: 7px;
+
+            z-index: 6000;
+
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 800px) {
+
+            .main {
+                flex-direction: column;
+            }
+
+            #graph {
+                height: 60vh;
+            }
+
+            .side-panel {
+                width: 100%;
+                height: 40vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- ------------------------------------------------------ -->
+<!-- LOADING -->
+<!-- ------------------------------------------------------ -->
+
+<div id="loading">
+    Loading knowledge graph...
+</div>
+
+<div id="error"></div>
+
+<!-- ------------------------------------------------------ -->
+<!-- HEADER -->
+<!-- ------------------------------------------------------ -->
+
+<div class="header">
+
+    <h1>Drug Interaction Knowledge Graph</h1>
+
+    <p>
+        Search a medicine to explore its interaction network.
+    </p>
+
+</div>
+
+<!-- ------------------------------------------------------ -->
+<!-- CONTROLS -->
+<!-- ------------------------------------------------------ -->
+
+<div class="controls">
+
+    <div class="search-container">
+
+        <input
+            id="searchBox"
+            type="text"
+            placeholder="Search drug or food... e.g. warfarin"
+            autocomplete="off"
+        >
+
+        <button onclick="searchDrug()">
+            Search
+        </button>
+
+    </div>
+
+    <select id="severityFilter" onchange="renderSelectedNode()">
+
+        <option value="all">
+            All severities
+        </option>
+
+        <option value="major">
+            Major
+        </option>
+
+        <option value="contraindicated">
+            Contraindicated
+        </option>
+
+        <option value="moderate">
+            Moderate
+        </option>
+
+        <option value="minor">
+            Minor
+        </option>
+
+    </select>
+
+    <button onclick="showPopularDrug()">
+        Example: Warfarin
+    </button>
+
+    <button onclick="resetGraph()">
+        Reset
+    </button>
+
+</div>
+
+<!-- ------------------------------------------------------ -->
+<!-- SEARCH RESULTS -->
+<!-- ------------------------------------------------------ -->
+
+<div id="searchResults"></div>
+
+<!-- ------------------------------------------------------ -->
+<!-- STATS -->
+<!-- ------------------------------------------------------ -->
+
+<div class="stats">
+
+    <div class="stat">
+        <strong id="nodeCount">0</strong>
+        nodes loaded
+    </div>
+
+    <div class="stat">
+        <strong id="edgeCount">0</strong>
+        interactions loaded
+    </div>
+
+    <div class="stat">
+        Showing:
+        <strong id="visibleCount">0</strong>
+        nodes
+    </div>
+
+</div>
+
+<!-- ------------------------------------------------------ -->
+<!-- MAIN -->
+<!-- ------------------------------------------------------ -->
+
+<div class="main">
+
+    <!-- GRAPH -->
+    <div id="graph"></div>
+
+    <!-- SIDE PANEL -->
+    <div class="side-panel">
+
+        <h2 id="selectedTitle">
+            Select a drug
+        </h2>
+
+        <div id="selectedInfo">
+
+            <p class="empty">
+                Search for a medicine above to view its interaction network.
+            </p>
+
+        </div>
+
+        <div class="legend">
+
+            <div class="legend-item">
+                <span class="legend-dot major-dot"></span>
+                Major
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot moderate-dot"></span>
+                Moderate
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot minor-dot"></span>
+                Minor
+            </div>
+
+            <div class="legend-item">
+                <span class="legend-dot food-dot"></span>
+                Food
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    /* ====================================================== */
+    /* GLOBAL DATA */
+    /* ====================================================== */
+
+    let graphData = null;
+
+    let allNodes = [];
+
+    let allEdges = [];
+
+    let nodeMap = new Map();
+
+    let network = null;
+
+    let selectedNode = null;
+
+
+    /* ====================================================== */
+    /* SEVERITY COLORS */
+    /* ====================================================== */
+
+    const SEVERITY_COLORS = {
+
+        contraindicated: "#000000",
+
+        major: "#dc2626",
+
+        moderate: "#f59e0b",
+
+        minor: "#eab308"
+
+    };
+
+
+    /* ====================================================== */
+    /* LOAD GRAPH */
+    /* ====================================================== */
+
+    async function loadGraph() {
+
+        try {
+
+            const response = await fetch(
+                "http://localhost:8000/graph"
+            );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Backend returned HTTP " +
+                    response.status
+                );
+
+            }
+
+            graphData = await response.json();
+
+            allNodes = graphData.nodes || [];
+
+            allEdges = graphData.edges || [];
+
+
+            /* ---------------------------------------------- */
+            /* CREATE NODE LOOKUP */
+            /* ---------------------------------------------- */
+
+            nodeMap.clear();
+
+            for (const node of allNodes) {
+
+                nodeMap.set(
+                    node.id.toLowerCase(),
+                    node
+                );
+
+            }
+
+
+            /* ---------------------------------------------- */
+            /* UPDATE COUNTERS */
+            /* ---------------------------------------------- */
+
+            document.getElementById(
+                "nodeCount"
+            ).textContent = allNodes.length.toLocaleString();
+
+
+            document.getElementById(
+                "edgeCount"
+            ).textContent = allEdges.length.toLocaleString();
+
+
+            /* ---------------------------------------------- */
+            /* HIDE LOADING */
+            /* ---------------------------------------------- */
+
+            document.getElementById(
+                "loading"
+            ).style.display = "none";
+
+
+            /* ---------------------------------------------- */
+            /* INITIAL GRAPH */
+            /* ---------------------------------------------- */
+
+            renderInitialGraph();
+
+
+            console.log(
+                "Knowledge graph loaded:",
+                allNodes.length,
+                "nodes,",
+                allEdges.length,
+                "edges"
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+            document.getElementById(
+                "loading"
+            ).style.display = "none";
+
+            showError(
+                "Could not load the graph. " +
+                "Make sure the FastAPI server is running on port 8000."
+            );
+
+        }
+
+    }
+
+
+    /* ====================================================== */
+    /* INITIAL GRAPH */
+    /* ====================================================== */
+
+    function renderInitialGraph() {
+
+        /*
+         * Do NOT render all 1,947 nodes and 130k edges.
+         *
+         * Instead show a small message until the user
+         * searches for a drug.
+         */
+
+        const container =
+            document.getElementById("graph");
+
+
+        const nodes = new vis.DataSet([]);
+
+        const edges = new vis.DataSet([]);
+
+
+        const options = {
+
+            physics: {
+
+                enabled: false
+
+            },
+
+            interaction: {
+
+                hover: true,
+
+                navigationButtons: true,
+
+                keyboard: true
+
+            }
+
+        };
+
+
+        network = new vis.Network(
+            container,
+            {
+                nodes: nodes,
+                edges: edges
+            },
+            options
+        );
+
+
+        document.getElementById(
+            "visibleCount"
+        ).textContent = "0";
+
+    }
+
+
+    /* ====================================================== */
+    /* SEARCH */
+    /* ====================================================== */
+
+    function searchDrug() {
+
+        const query =
+            document
+                .getElementById("searchBox")
+                .value
+                .trim()
+                .toLowerCase();
+
+
+        if (!query) {
+
+            return;
+
+        }
+
+
+        /*
+         * Exact match first.
+         */
+
+        let match = nodeMap.get(query);
+
+
+        /*
+         * If no exact match,
+         * search for partial match.
+         */
+
+        if (!match) {
+
+            match = allNodes.find(
+                node =>
+                    node.id
+                        .toLowerCase()
+                        .includes(query)
+            );
+
+        }
+
+
+        if (!match) {
+
+            showError(
+                "No drug or food found for: " +
+                query
+            );
+
+            return;
+
+        }
+
+
+        selectedNode = match.id;
+
+        renderSelectedNode();
+
+    }
+
+
+    /* ====================================================== */
+    /* SEARCH AUTOCOMPLETE */
+    /* ====================================================== */
+
+    document
+        .getElementById("searchBox")
+        .addEventListener(
+            "input",
+            function () {
+
+                const query =
+                    this.value
+                        .trim()
+                        .toLowerCase();
+
+
+                const results =
+                    document.getElementById(
+                        "searchResults"
+                    );
+
+
+                if (
+                    query.length < 2
+                ) {
+
+                    results.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                const matches =
+                    allNodes
+                        .filter(
+                            node =>
+                                node.id
+                                    .toLowerCase()
+                                    .includes(query)
+                        )
+                        .slice(0, 20);
+
+
+                results.innerHTML = "";
+
+
+                if (
+                    matches.length === 0
+                ) {
+
+                    results.style.display =
+                        "none";
+
+                    return;
+
+                }
+
+
+                for (
+                    const node of matches
+                ) {
+
+                    const div =
+                        document.createElement(
+                            "div"
+                        );
+
+                    div.className =
+                        "search-result";
+
+
+                    div.innerHTML =
+                        `
+                            <strong>
+                                ${escapeHtml(node.id)}
+                            </strong>
+
+                            <small>
+                                ${node.kind || "unknown"}
+                            </small>
+                        `;
+
+
+                    div.onclick =
+                        function () {
+
+                            selectedNode =
+                                node.id;
+
+                            document
+                                .getElementById(
+                                    "searchBox"
+                                )
+                                .value =
+                                node.id;
+
+                            results.style.display =
+                                "none";
+
+                            renderSelectedNode();
+
+                        };
+
+
+                    results.appendChild(div);
+
+                }
+
+
+                results.style.display =
+                    "block";
+
+            }
+        );
+
+
+    /* ====================================================== */
+    /* ENTER KEY SEARCH */
+    /* ====================================================== */
+
+    document
+        .getElementById("searchBox")
+        .addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Enter"
+                ) {
+
+                    document
+                        .getElementById(
+                            "searchResults"
+                        )
+                        .style.display =
+                        "none";
+
+                    searchDrug();
+
+                }
+
+            }
+        );
+
+
+    /* ====================================================== */
+    /* RENDER SELECTED NODE */
+    /* ====================================================== */
+
+    function renderSelectedNode() {
+
+        if (!selectedNode) {
+
+            return;
+
+        }
+
+
+        const filter =
+            document
+                .getElementById(
+                    "severityFilter"
+                )
+                .value;
+
+
+        /*
+         * Find every edge touching the
+         * selected node.
+         */
+
+        let relatedEdges =
+            allEdges.filter(
+                edge =>
+                    edge.source === selectedNode ||
+                    edge.target === selectedNode
+            );
+
+
+        /*
+         * Apply severity filter.
+         */
+
+        if (
+            filter !== "all"
+        ) {
+
+            relatedEdges =
+                relatedEdges.filter(
+                    edge =>
+                        edge.severity ===
+                        filter
+                );
+
+        }
+
+
+        /*
+         * Collect selected node
+         * + its neighbors.
+         */
+
+        const visibleIds =
+            new Set([
+                selectedNode
+            ]);
+
+
+        for (
+            const edge of relatedEdges
+        ) {
+
+            visibleIds.add(
+                edge.source
+            );
+
+            visibleIds.add(
+                edge.target
+            );
+
+        }
+
+
+        const visibleNodes =
+            allNodes.filter(
+                node =>
+                    visibleIds.has(
+                        node.id
+                    )
+            );
+
+
+        /*
+         * Create Vis nodes.
+         */
+
+        const visNodes =
+            visibleNodes.map(
+                node => {
+
+                    const isSelected =
+                        node.id ===
+                        selectedNode;
+
+
+                    const isFood =
+                        node.kind ===
+                        "food";
+
+
+                    return {
+
+                        id: node.id,
+
+                        label: node.id,
+
+                        shape:
+                            isFood
+                                ? "box"
+                                : "dot",
+
+                        size:
+                            isSelected
+                                ? 30
+                                : 18,
+
+                        color:
+                            isSelected
+                                ? {
+                                    background:
+                                        "#2563eb",
+
+                                    border:
+                                        "#1e3a8a"
+                                }
+                                :
+                                isFood
+                                    ? {
+                                        background:
+                                            "#86efac",
+
+                                        border:
+                                            "#15803d"
+                                    }
+                                    :
+                                    {
+                                        background:
+                                            "#93c5fd",
+
+                                        border:
+                                            "#2563eb"
+                                    },
+
+                        font: {
+
+                            color:
+                                "#111827",
+
+                            size:
+                                isSelected
+                                    ? 18
+                                    : 14
+
+                        }
+
+                    };
+
+                }
+            );
+
+
+        /*
+         * Create Vis edges.
+         */
+
+        const visEdges =
+            relatedEdges.map(
+                (edge, index) => {
+
+                    const severity =
+                        edge.severity ||
+                        "minor";
+
+
+                    return {
+
+                        id:
+                            index +
+                            "_" +
+                            edge.source +
+                            "_" +
+                            edge.target,
+
+                        from:
+                            edge.source,
+
+                        to:
+                            edge.target,
+
+                        color:
+                            SEVERITY_COLORS[
+                                severity
+                            ] ||
+                            "#94a3b8",
+
+                        width:
+                            severity ===
+                            "major"
+                                ? 4
+                                : 2,
+
+                        dashes:
+                            edge.type ===
+                            "drug-food",
+
+                        arrows:
+                            {
+                                to:
+                                {
+                                    enabled:
+                                        false
+                                }
+                            },
+
+                        title:
+                            `
+                            <b>
+                                ${escapeHtml(
+                                    severity
+                                )}
+                            </b>
+                            <br>
+                            ${escapeHtml(
+                                edge.mechanism ||
+                                "No mechanism available"
+                            )}
+                            `
+
+                    };
+
+                }
+            );
+
+
+        /* -------------------------------------------------- */
+        /* CREATE NETWORK */
+        /* -------------------------------------------------- */
+
+        const container =
+            document.getElementById(
+                "graph"
+            );
+
+
+        const data = {
+
+            nodes:
+                new vis.DataSet(
+                    visNodes
+                ),
+
+            edges:
+                new vis.DataSet(
+                    visEdges
+                )
+
+        };
+
+
+        const options = {
+
+            physics: {
+
+                enabled: true,
+
+                stabilization: {
+
+                    enabled: true,
+
+                    iterations: 150
+
+                },
+
+                barnesHut: {
+
+                    gravitationalConstant:
+                        -5000,
+
+                    centralGravity:
+                        0.2,
+
+                    springLength:
+                        180,
+
+                    springConstant:
+                        0.04,
+
+                    damping:
+                        0.15
+
+                }
+
+            },
+
+            interaction: {
+
+                hover: true,
+
+                navigationButtons: true,
+
+                keyboard: true,
+
+                zoomView: true,
+
+                dragView: true
+
+            },
+
+            edges: {
+
+                smooth: {
+
+                    enabled: true,
+
+                    type: "dynamic"
+
+                }
+
+            }
+
+        };
+
+
+        network =
+            new vis.Network(
+                container,
+                data,
+                options
+            );
+
+
+        /*
+         * Update visible count.
+         */
+
+        document.getElementById(
+            "visibleCount"
+        ).textContent =
+            visibleNodes.length.toLocaleString();
+
+
+        /*
+         * Update side panel.
+         */
+
+        updateSidePanel(
+            selectedNode,
+            relatedEdges
+        );
+
+
+        /*
+         * When a node is clicked,
+         * select it.
+         */
+
+        network.on(
+            "click",
+            function (params) {
+
+                if (
+                    params.nodes.length ===
+                    0
+                ) {
+
+                    return;
+
+                }
+
+
+                selectedNode =
+                    params.nodes[0];
+
+
+                document
+                    .getElementById(
+                        "searchBox"
+                    )
+                    .value =
+                    selectedNode;
+
+
+                renderSelectedNode();
+
+            }
+        );
+
+    }
+
+
+    /* ====================================================== */
+    /* SIDE PANEL */
+    /* ====================================================== */
+
+    function updateSidePanel(
+        nodeId,
+        edges
+    ) {
+
+        const node =
+            nodeMap.get(
+                nodeId.toLowerCase()
+            );
+
+
+        const title =
+            document.getElementById(
+                "selectedTitle"
+            );
+
+
+        const info =
+            document.getElementById(
+                "selectedInfo"
+            );
+
+
+        title.textContent =
+            nodeId;
+
+
+        let html = "";
+
+
+        html +=
+            `
+            <div class="info-box">
+
+                <div class="info-title">
+                    Node type
+                </div>
+
+                <div>
+                    ${escapeHtml(
+                        node?.kind ||
+                        "unknown"
+                    )}
+                </div>
+
+            </div>
+            `;
+
+
+        html +=
+            `
+            <div class="info-box">
+
+                <div class="info-title">
+                    Direct interactions
+                </div>
+
+                <div>
+                    ${edges.length}
+                </div>
+
+            </div>
+            `;
+
+
+        if (
+            edges.length === 0
+        ) {
+
+            html +=
+                `
+                <p class="empty">
+                    No interactions found for the
+                    selected filter.
+                </p>
+                `;
+
+            info.innerHTML =
+                html;
+
+            return;
+
+        }
+
+
+        /*
+         * Sort interactions by severity.
+         */
+
+        const rank = {
+
+            contraindicated: 0,
+
+            major: 1,
+
+            moderate: 2,
+
+            minor: 3
+
+        };
+
+
+        edges.sort(
+            (a, b) =>
+                (rank[a.severity] ?? 99) -
+                (rank[b.severity] ?? 99)
+        );
+
+
+        for (
+            const edge of edges
+        ) {
+
+            const other =
+                edge.source === nodeId
+                    ? edge.target
+                    : edge.source;
+
+
+            const severity =
+                edge.severity ||
+                "unknown";
+
+
+            html +=
+                `
+                <div class="interaction ${severity}">
+
+                    <div>
+                        <strong>
+                            ${escapeHtml(
+                                other
+                            )}
+                        </strong>
+                    </div>
+
+                    <div class="severity">
+                        ${escapeHtml(
+                            severity
+                        )}
+                    </div>
+
+                    <div class="mechanism">
+                        ${escapeHtml(
+                            edge.mechanism ||
+                            "No mechanism available."
+                        )}
+                    </div>
+
+                </div>
+                `;
+
+        }
+
+
+        info.innerHTML =
+            html;
+
+    }
+
+
+    /* ====================================================== */
+    /* EXAMPLE */
+    /* ====================================================== */
+
+    function showPopularDrug() {
+
+        selectedNode =
+            "warfarin";
+
+
+        document
+            .getElementById(
+                "searchBox"
+            )
+            .value =
+            "warfarin";
+
+
+        renderSelectedNode();
+
+    }
+
+
+    /* ====================================================== */
+    /* RESET */
+    /* ====================================================== */
+
+    function resetGraph() {
+
+        selectedNode =
+            null;
+
+
+        document
+            .getElementById(
+                "searchBox"
+            )
+            .value =
+            "";
+
+
+        document
+            .getElementById(
+                "severityFilter"
+            )
+            .value =
+            "all";
+
+
+        document
+            .getElementById(
+                "selectedTitle"
+            )
+            .textContent =
+            "Select a drug";
+
+
+        document
+            .getElementById(
+                "selectedInfo"
+            )
+            .innerHTML =
+            `
+            <p class="empty">
+                Search for a medicine above to
+                view its interaction network.
+            </p>
+            `;
+
+
+        renderInitialGraph();
+
+    }
+
+
+    /* ====================================================== */
+    /* ERROR */
+    /* ====================================================== */
+
+    function showError(message) {
+
+        const error =
+            document.getElementById(
+                "error"
+            );
+
+
+        error.textContent =
+            message;
+
+
+        error.style.display =
+            "block";
+
+
+        setTimeout(
+            () => {
+
+                error.style.display =
+                    "none";
+
+            },
+            5000
+        );
+
+    }
+
+
+    /* ====================================================== */
+    /* HTML ESCAPE */
+    /* ====================================================== */
+
+    function escapeHtml(value) {
+
+        return String(value)
+
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+
+            .replace(
+                /</g,
+                "&lt;"
+            )
+
+            .replace(
+                />/g,
+                "&gt;"
+            )
+
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+
+    }
+
+
+    /* ====================================================== */
+    /* START */
+    /* ====================================================== */
+
+    loadGraph();
+
+</script>
+
+</body>
+</html>
